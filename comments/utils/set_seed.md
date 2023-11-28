@@ -1,0 +1,3 @@
+The `set_seed.py` file provides a utility function named `set_seed` that initializes random seeds for various libraries, including Python's built-in `random`, NumPy, and PyTorch. 
+By setting these seeds, the code ensures reproducibility in experiments, making random operations, especially in deep learning tasks involving GPUs, produce consistent results across different runs. This is achieved by configuring the seed values for CPU and GPU random number generators, disabling CuDNN benchmarking, and enforcing deterministic algorithms in PyTorch. 
+The primary purpose is to create a controlled and reproducible environment for experiments that involve randomness.
