@@ -143,6 +143,35 @@ class CLIP4MC(nn.Module):
         return self.vit(image)
 
     def get_video_embedding(self, frame_embedding, motion_frame_embedding=None):
+         """
+    Computes the video and motion embeddings from the input frame embeddings.
+
+    Args:
+        frame_embedding (torch.Tensor): Tensor representing the embeddings of video frames.
+        motion_frame_embedding (torch.Tensor, optional): Tensor representing the embeddings of video frames
+            with motion information. If not provided, defaults to frame_embedding.
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: Tuple containing the video embedding and the motion embedding.
+
+    Note:
+        The function involves several steps including temporal encoding, creating frame differences,
+        encoding differences, and adapting the embeddings.
+
+    Steps:
+        1. If motion_frame_embedding is not provided, set it to frame_embedding.
+        2. Temporal Encoding（时间编码器）: Use temporal_encoder to process frame_embedding and obtain video_embedding,
+           capturing temporal information among video frames.
+        3. Creating Frame Differences 通过堆叠帧的差异，创建不同时间跨度的嵌入表示: Stack differences between consecutive frames to create embeddings
+           with different time spans (consequence_embedding, consequence_embedding2, etc.).
+        4. Difference Encoding 差异编码器: Use difference_encoder to encode the frame difference embeddings and obtain
+           motion-related embeddings (difference_embedding).
+        5. Temporal Difference Encoding 时间差异编码器: Use temporal_difference_encoder to process the difference_embedding,
+           capturing temporal differences among frames and obtaining motion_embedding.
+        6. Motion Adapter: Adapt the motion_embedding using motion_adapter.
+        7. Normalization: Normalize both video_embedding and motion_embedding to ensure unit length.
+
+    """
         if motion_frame_embedding is None:
             motion_frame_embedding = frame_embedding
         B, T, D = frame_embedding.shape
