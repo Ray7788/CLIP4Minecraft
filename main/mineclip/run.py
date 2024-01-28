@@ -25,31 +25,31 @@ def main(cfg):
     VIDEO_BATCH, TEXT_BATCH = video.size(0), len(prompts)
     print(f"Video batch size: {VIDEO_BATCH}, Text batch size: {TEXT_BATCH}")
 
+    # encode batch of videos --------------------------------
     image_feats = model.forward_image_features(video)
     video_feats = model.forward_video_features(image_feats) 
-    # 
     assert video_feats.shape == (VIDEO_BATCH, 512)
     video_feats_2 = model.encode_video(video)
     # encode_video is equivalent to forward_video_features(forward_image_features(video))
     torch.testing.assert_allclose(video_feats, video_feats_2)
 
-    # encode batch of prompts
+    # encode batch of prompts --------------------------------
     text_feats_batch = model.encode_text(prompts)
     assert text_feats_batch.shape == (TEXT_BATCH, 512)
 
-    # compute reward from features
+    # compute reward from features --------------------------
     logits_per_video, logits_per_text = model.forward_reward_head(
         video_feats, text_tokens=text_feats_batch
     )
     assert logits_per_video.shape == (VIDEO_BATCH, TEXT_BATCH)
     assert logits_per_text.shape == (TEXT_BATCH, VIDEO_BATCH)
     # directly pass in strings. This invokes the tokenizer under the hood
-    reward_scores_2, _ = model.forward_reward_head(video_feats, text_tokens=prompts)
+    reward_scores_2, reward_text_2 = model.forward_reward_head(video_feats, text_tokens=prompts)
     # pass in cached, encoded text features
-    reward_scores_3, _ = model(
+    reward_scores_3, reward_text_3 = model(
         video_feats, text_tokens=text_feats_batch, is_video_features=True
     )
-    reward_scores_4, _ = model(
+    reward_scores_4, reward_text_4 = model(
         video, text_tokens=text_feats_batch, is_video_features=False
     )
     # all above are equivalent, just starting from features or raw values
@@ -57,6 +57,10 @@ def main(cfg):
     torch.testing.assert_allclose(logits_per_video, reward_scores_3)
     torch.testing.assert_allclose(logits_per_video, reward_scores_4)
 
+    # check that the transposed text reward scores are equivalent
+    torch.testing.assert_allclose(logits_per_text, reward_text_2)
+    torch.testing.assert_allclose(logits_per_text, reward_text_3)
+    torch.testing.assert_allclose(logits_per_text, reward_text_4)
     print("Inference successful")
 
 
