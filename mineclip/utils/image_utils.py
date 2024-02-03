@@ -34,7 +34,7 @@ def basic_image_tensor_preprocess(
     img = img.flatten(0, img.dim() - 4)
     assert img.dim() == 4
 
-    input_size = img.size()[-2:]
+    input_size = img.size()[-2:]    # height, width
 
     if shape and input_size != shape:
         warnings.warn(
