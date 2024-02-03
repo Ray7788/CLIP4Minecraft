@@ -1,18 +1,26 @@
 from __future__ import annotations
 
 import warnings
-
+import yaml
 import torch
 
 from .torch_utils import torch_normalize
 
 
+with open('config.yaml', 'r') as f:
+    config = yaml.safe_load(f)['data_config']
+MC_IMAGE_SIZE = config['image_size']
+MC_IMAGE_MEAN = config['image_mean']
+MC_IMAGE_STD = config['image_std']
+CLIP_FRAME_NUM = config['clip_frame']
+
+
 @torch.no_grad()
 def basic_image_tensor_preprocess(
     img,
-    mean: tuple[float, float, float] = (0.5, 0.5, 0.5),
-    std: tuple[float, float, float] = (0.5, 0.5, 0.5),
-    shape: tuple[int, int] | None = None,
+    mean: tuple[float, float, float] = MC_IMAGE_MEAN,
+    std: tuple[float, float, float] = MC_IMAGE_SIZE,
+    shape: tuple[int, int] | None = MC_IMAGE_SIZE,
 ):
     """
     Check for resize, and divide by 255
