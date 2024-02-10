@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable
-
+import loralib as lora
 import torch
 import torch.nn as nn
 import tree
@@ -109,14 +109,14 @@ def save_state_dict(obj, model_path: str, serial: int, type_name="", strip_prefi
     
     model_path = os.path.join(
         model_path, "FT_model.bin.{}{}".format("" if type_name == "" else type_name + ".", serial))
-    state = obj.state_dict()
+    # state = obj.state_dict()
+    state = lora.lora_state_dict(obj)
 
     if strip_prefix:
         assert isinstance(strip_prefix, str)
         state = {
             f"{strip_prefix}{k}": v for k, v in state.items()
         }
-    
     torch.save(state, model_path)
     # logger.info("Model saved to %s", output_model_file)
 
