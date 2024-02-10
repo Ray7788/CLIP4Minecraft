@@ -13,7 +13,7 @@ import yaml
 import json
 
 
-# ------------------------ Data Loader Helper ------------------------ #
+# ------------------------ Data Loader Helper Functions ------------------------ #
 @lru_cache(None)
 def get_processed_list(dataset_log_file: str, dataset: Literal['train', 'test'] = None):
     """
@@ -21,9 +21,7 @@ def get_processed_list(dataset_log_file: str, dataset: Literal['train', 'test'] 
     """
     with open(dataset_log_file, 'r') as f:
         datasets = json.load(f)
-    # if dataset is None:
-    #     return datasets
-    # assert dataset in datasets, f'No such dataset {dataset}.'
+
     return datasets
 
 
@@ -34,7 +32,7 @@ def get_processed_len(dataset_log_file, dataset: Literal["train", "test"] = None
     return len(get_processed_list(dataset_log_file, dataset))
 
 
-def load_processed_data(dataset_log_file, data_idx: int, use_mask: bool = True,
+def load_processed_data(dataset_log_file, data_idx: int, use_mask: bool = False,
                         dataset: Literal["train", "test"] = None):
     """
     Load processed data(video encoding and raw text) based on the data_idx of the JSON file.
@@ -44,11 +42,15 @@ def load_processed_data(dataset_log_file, data_idx: int, use_mask: bool = True,
         data_idx: The index of the data to be loaded.
         use_mask: Whether to use the mask in the text input.
         dataset: The dataset to be loaded. If None, all datasets will be loaded.
+
+    Returns:
+        video_input: The video input: torch.Tensor
+        text_input: The text input: raw text
     """
     processed_list = get_processed_list(dataset_log_file, dataset)
 
-    assert data_idx < len(processed_list), \
-        f'Index {data_idx} is beyond the length of processed {dataset} dataset, {len(processed_list)}. '
+    assert data_idx < get_processed_len(processed_list), \
+        f'Index {data_idx} is beyond the length of processed {dataset} dataset, {len(processed_list)}.'
 
     # specified video id
     file_path = processed_list[data_idx].get('vid')
