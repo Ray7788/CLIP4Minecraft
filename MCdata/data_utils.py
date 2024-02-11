@@ -52,14 +52,13 @@ def load_processed_data(dataset_log_file, data_idx: int, use_mask: bool = False,
     assert data_idx < get_processed_len(processed_list), \
         f'Index {data_idx} is beyond the length of processed {dataset} dataset, {len(processed_list)}.'
 
+    # raw text input
+    text_input = processed_list[data_idx].get('transcript clip')
     # specified video id
     file_path = processed_list[data_idx].get('vid')
-
-    text_input = processed_list[data_idx].get('transcript clip')
-    # with open(os.path.join(file_path, 'text_input.pkl'), 'rb') as f:
-    #     text_input = torch.load(f)
-
-    with open(os.path.join(file_path, '.pth'), 'rb') as f:
+    dir_path = os.path.dirname(dataset_log_file)
+    # load video tensor input
+    with open(os.path.join(dir_path, file_path, '.pth'), 'rb') as f:
         video_input = torch.load(f)
     
     return (video_input, *text_input) if use_mask else (video_input, text_input)
