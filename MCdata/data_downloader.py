@@ -3,7 +3,7 @@ from yt_dlp.utils import download_range_func
 import json
 import os
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 
 import subprocess
 import sys
@@ -17,7 +17,7 @@ def download_video_clip(video_id, start_time, end_time, width, height, output_fo
     os.makedirs(output_folder, exist_ok=True)
 
     ydl_opts = {
-        'format': 'bestvideo[height={}][width={}][filesize<50MB]'.format(height,width),
+        'format': 'bestvideo[height<={}][width<={}][filesize<250MB]'.format(height+200,width+200),
         'quiet': False,
         'outtmpl': os.path.join(output_folder, '{}.mp4'.format(video_id)),
         'merge_output_format': 'mp4',
@@ -61,7 +61,8 @@ def process_json(source_json_file, output_folder, sampled_json_file):
 
 
 def main():
-    source_json_files = ['train_source.json', 'test_source.json']  # the path to source JSON file
+    # MCdata/train_1.json
+    source_json_files = ['train_1.json', 'test_1.json']  # the path to source JSON file
     sampled_json_files = ['train.json', 'test.json']  # actual selected output JSON file
     output_folders = ['train_videos', 'test_videos']  # the path to the output folder
     
@@ -70,8 +71,10 @@ def main():
     with ThreadPoolExecutor(max_workers=len(source_json_files)) as executor:
         futures = [executor.submit(process_json, source_json_files[i], output_folders[i], sampled_json_files[i]) for i in range(len(source_json_files))]
         
-        for i, future in enumerate(tqdm(futures, total=len(source_json_files), desc="Processing JSON files")):
-            pass
+        wait(futures)  # Wait for all tasks to complete
+
+        for future in futures:
+            all_successful_videos.extend(future.result())
 
 if __name__ == "__main__":
     main()
