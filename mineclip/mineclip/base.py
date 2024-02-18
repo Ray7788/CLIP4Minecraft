@@ -37,6 +37,8 @@ class VideoRewardBase(nn.Module):
 
     def forward_image_features(self, frames):
         """
+        1. Preprocess the frames and encode them into image features
+    
         [..., C, H, W] -> [..., F], independent encoding of each frame image
         C: channels, H: height, W: width, F: feature dim
         """
@@ -52,6 +54,8 @@ class VideoRewardBase(nn.Module):
 
     def forward_video_features(self, image_features):
         """
+        2. Given image features, encode them into video features
+        
         [B, L, F] -> [B, F] temporal encoding of image features
         """
         B, L, F = image_features.size()
@@ -65,6 +69,15 @@ class VideoRewardBase(nn.Module):
 
         [B, F] -> [B, D]    D: number of classes/dimensions
 
+        B: batch size, F: feature dim, D: number of classes/dimensions
+
+        Args:
+            video_features: [B, F] video features
+            text_tokens: [B, L, D] text tokens
+            softmax: whether to apply softmax to the output, transforming it into a probability distribution
+        
+        Returns:
+            rewards: [B, D] reward scores
         """
         B, F = video_features.size()
         if text_tokens is not None:
