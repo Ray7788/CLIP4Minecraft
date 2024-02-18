@@ -8,25 +8,25 @@ def get_args(description='MineCLIP args'):
     parser.add_argument('--seed', type=int, default=42, help='set random seed') # 260817
     parser.add_argument('--n_display', type=int, default=10, help='display step')
 
-    parser.add_argument('--dataset_log_file', type=str, default='./Youtube_dataset/log.json',
-                        help='dataset log file of data(video&text input) paths')
+    parser.add_argument('--train_dataset_log_file', type=str, default='./MCdata/train_videos_2/train_2.json',
+                        help='training dataset log file of data(video&text input) paths')
+    parser.add_argument('--test_dataset_log_file', type=str, default='./MCdata/test_videos_2/test_2.json',
+                        help='test dataset log file of data(video&text input) paths')
     
     parser.add_argument('--use_pretrained_CLIP', action='store_true', default=False, help='use pretrained CLIP(ViT) model')
     parser.add_argument('--pretrained_CLIP_path', type=str, default="./ViT-B-16.pt", help='pretrained CLIP model path')
 
     parser.add_argument('--use_pretrained_model', action='store_true', default=False, help='use pretrained model')
     parser.add_argument('--pretrain_model_path', type=str, default="./CLIP4MC.pt", help='pretrained model path')
-    # TODO: Delete this line
-    parser.add_argument('--model_type', type=str, default='MineCLIP', choices=['CLIP4MC', 'CLIP4MC_simple', 'MineCLIP'], help='model type')
+    parser.add_argument('--model_type', type=str, default='MineCLIP', choices=['CLIP4MC', 'MineCLIP'], help='pretrained model type')
 
     parser.add_argument('--clip_frame_num', type=int, default=16, help='frame num for each shorter clip')
     parser.add_argument('--clip_frame_stride', type=int, default=8, help='frame stride for each shorter clip')
-
     parser.add_argument('--use_mask', action='store_true', default=False, help='data process name')
     parser.add_argument('--num_workers', type=int, default=8, help='num workers')
     
-    parser.add_argument('--batch_size', type=int, default=60, help='batch size')
-    parser.add_argument('--batch_size_eval', type=int, default=60, help='batch size evaluate')
+    parser.add_argument('--batch_size', type=int, default=60, help='batch size for training')
+    parser.add_argument('--batch_size_eval', type=int, default=60, help='batch size for evaluation')
 
     # Training
     parser.add_argument('--epochs', type=int, default=40, help='num of epochs')
