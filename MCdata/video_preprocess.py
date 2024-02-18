@@ -17,6 +17,7 @@ def img_to_tensor(frame, dtype=None, device=None):
     """
     Convert a numpy array to a torch tensor with shape (1, C, H, W).
     """
+    # CV2 uses BGR, which needs to be converted to RGB
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Change color space from BGR to RGB
     img = torch.ByteTensor(torch.ByteStorage.from_buffer(frame.tobytes()))
     img = img.view(frame.shape[1], frame.shape[0], len(frame.mode)) # HWC ordinary format
@@ -79,15 +80,14 @@ def preprocess_frames(frames, dataset: Literal["train", "test"] = None, mean=(0.
     """
     preprocessed_frames = []
     for frame in frames:
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        if dataset == "train":  # Data augmentation for training
-            image_transform(frame)
+        # TODO: Add data augmentation for training?
+        # if dataset == "train":  # Data augmentation for training
+        #     image_transform(frame)
 
         frame_tensor = img_to_tensor(frame)
         preprocessed_frames.append(frame_tensor)
         
-    return torch.stack(preprocessed_frames) # Stack the frames into a single tensor
+    return torch.stack(preprocessed_frames) # Stack 16 frames into a single tensor
 
 
 def preprocess_video(video_file, num_frames=16, dataset: Literal["train", "test"] = None):
