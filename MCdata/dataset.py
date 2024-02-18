@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from typing import Literal
-from .data_utils import get_processed_len, load_processed_data, image_transform, torch_normalize
+from .data_utils import get_processed_len, load_processed_data
 
 class NaiveDataset(Dataset):
     """
@@ -9,7 +9,7 @@ class NaiveDataset(Dataset):
 
     Args:
         dataset: which category of dataset to use, train or test.
-        dataset_log_file: path to the dataset log file.
+        dataset_log_file: path to the corresponding dataset file.
         use_mask: whether to use entity mask and action mask of text input.
     """
     def __init__(self, dataset_log_file: str, use_mask: bool = True, dataset: Literal["train", "test"] = None):
@@ -34,11 +34,10 @@ class NaiveDataset(Dataset):
 
         Returns:
             video: torch.Tensor, video input.
-            text: torch.Tensor, text input.
+            text: string, text input.
         """
         data = list(load_processed_data(self.dataset_log_file, idx, self.use_mask, self.dataset))
         video = data[0] 
-        # the second element is text(video)
         text = data[1]
 
         return video, text
