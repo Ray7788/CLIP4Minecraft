@@ -4,6 +4,7 @@ Adapted from OpenAI CLIP implementation: https://github.com/openai/CLIP
 from __future__ import annotations
 
 from collections import OrderedDict
+from typing import Literal
 import loralib as lora
 import numpy as np
 import torch
@@ -99,6 +100,16 @@ class VisionTransformer(nn.Module):
         )
         self.ln_post = nn.LayerNorm(width)
         self.projection = nn.Parameter(scale * torch.randn(width, output_dim))
+        self.layers = layers + 2
+
+    def get_layer(self, layer: int):
+        assert 0 <= layer < self.layers, f"layer {layer} is out of range"
+        if layer == 0:
+            return self.conv1, self.cls_token, self.pos_embed, self.ln_pre
+        elif layer == self.layers - 1:
+            return self.ln_post, self.projection,
+        else:
+            return self.blocks[layer - 1],
 
     def resize_pos_embed(self, new_resolution):
         """
@@ -190,6 +201,16 @@ class GPT(nn.Module):
         self.projection = nn.Parameter(torch.empty(width, embed_dim))
 
         self.initialize_parameters()
+        self.layers = layers + 2    # token_embedding and layer_normalization
+
+    def get_layer(self, layer: int):
+        assert 0 <= layer < self.layers, f"layer {layer} is out of range"
+        if layer == 0:  # token embedding and positional embedding
+            return self.token_embedding, self.pos_embed
+        elif layer == self.layers - 1:  # layer normalization and projection
+            return self.ln_final, self.projection
+        else:   # residual attention blocks
+            return self.blocks[layer - 1],
 
     def initialize_parameters(self):
         if self._is_discrete_text:
@@ -273,6 +294,24 @@ class CLIP(nn.Module):
         )
 
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+
+    def get_layer(self, layer: int, layer_type: Literal['video', 'text', 'cross']):
+        if layer_type == 'video':
+            if layer < self.vit.layers:
+                return self.vit.get_layer(layer)
+            elif layer < self.vit.layers + self.temporal_encoder.layers:
+                return self.temporal_encoder.get_layer(layer - self.vit.layers)
+            elif layer < self.video_layers:
+                return self.video_adapter.get_layer(layer - self.vit.layers - self.temporal_encoder.layers)
+        elif layer_type == 'text':
+            if layer < self.gpt.layers:
+                return self.gpt.get_layer(layer)
+            elif layer < self.text_layers:
+                return self.text_adapter.get_layer(layer - self.gpt.layers)
+        elif layer_type == 'cross':
+            if layer == 0:
+                return self.logit_scale,
+        return []
 
     def encode_image(self, image):
         return self.vision_model(image)
