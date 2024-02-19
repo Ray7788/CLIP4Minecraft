@@ -4,7 +4,7 @@ Adapted from OpenAI CLIP implementation: https://github.com/openai/CLIP
 from __future__ import annotations
 
 from collections import OrderedDict
-
+import loralib as lora
 import numpy as np
 import torch
 from torch import nn
@@ -171,9 +171,11 @@ class GPT(nn.Module):
 
         self._is_discrete_text = is_discrete_text
         if is_discrete_text:
-            self.token_embedding = nn.Embedding(vocab_size, width)
+            # self.token_embedding = nn.Embedding(vocab_size, width)
+            self.token_embedding = lora.Embedding(vocab_size, width, r=4)
         else:
-            self.token_embedding = nn.Linear(vocab_size, width, bias=False)
+            # self.token_embedding = nn.Linear(vocab_size, width, bias=False)
+            self.token_embedding = lora.Linear(vocab_size, width, r=4)
         self.pos_embed = nn.Parameter(torch.empty(self.context_length, width))
         self.blocks = nn.Sequential(
             *[

@@ -2,12 +2,12 @@ import datetime
 import json
 from MCdata.data_loader import get_naive_dataloader
 from mineclip.mineclip.optimizer import get_optimizer
-
 from mineclip.utils.metrices import compute_metrices
 from mineclip import MineCLIP
 from mineclip.utils import get_args, set_seed, get_logger, save_state_dict
 # get_optimizer, save_model, get_naive_dataloader, compute_metrics
 
+import loralib as lora
 import os
 import time
 import torch
@@ -84,7 +84,7 @@ def train_epoch(epoch, args, model, train_dataloader, device, optimizer, schedul
         global_step: the current global step.
     """
     global logger
-
+    lora.mark_only_lora_as_trainable(model)
     model.train()   # Set the model to training mode
     log_step = args.n_display   # frequency of logging
     start_time = time.time()
@@ -98,9 +98,9 @@ def train_epoch(epoch, args, model, train_dataloader, device, optimizer, schedul
         text_feats_batch = model.encode_text(text)
 
         with autocast(device_type='cuda'):  # Automatic Mixed Precision (AMP)
-            logits_per_image, logits_per_text = model(video, text_tokens=text_feats_batch,  is_video_features=False, train=True)
+            logits_per_image, logits_per_text = model(video, text_tokens=text_feats_batch,  is_video_features=False)
             loss = contrastive_loss(logits_per_image, logits_per_text)
-
+        optimizer.zero_grad()   # TODO: Change this position
         loss.backward()
 
         total_loss += float(loss)
@@ -110,7 +110,7 @@ def train_epoch(epoch, args, model, train_dataloader, device, optimizer, schedul
             scheduler.step()
 
         optimizer.step()
-        optimizer.zero_grad()
+
 
         model.module.clamp_logit_scale()    # Clamp the logit scale
 
@@ -150,9 +150,11 @@ def eval_epoch(model, test_dataloader, writer, epoch, device):
 
         for bid, batch in enumerate(test_dataloader):
             torch.cuda.empty_cache()
-            batch = tuple(t.to(device) for t in batch)
+            video, text = tuple(t.to(device) for t in batch)
+            # Preprocess text
+            text_feats_batch = model.encode_text(text)
             with autocast(device_type='cuda'):
-                video_features, text_features = model(*batch, train=False)
+                video_features, text_features = model(video, text_tokens=text_feats_batch, is_video_features=False)
             
             if local_rank == 0:
                 if isinstance(video_features, list):
