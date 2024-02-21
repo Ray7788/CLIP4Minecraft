@@ -109,8 +109,8 @@ def save_state_dict(obj, model_path: str, serial: int, type_name="", strip_prefi
     
     model_path = os.path.join(
         model_path, "FT_model.bin.{}{}".format("" if type_name == "" else type_name + ".", serial))
-    # state = obj.state_dict()
-    state = lora.lora_state_dict(obj)
+    state = obj.state_dict()
+    # state = lora.lora_state_dict(obj)
 
     if strip_prefix:
         assert isinstance(strip_prefix, str)

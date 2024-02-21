@@ -182,11 +182,11 @@ class GPT(nn.Module):
 
         self._is_discrete_text = is_discrete_text
         if is_discrete_text:
-            # self.token_embedding = nn.Embedding(vocab_size, width)
-            self.token_embedding = lora.Embedding(vocab_size, width, r=4)
+            self.token_embedding = nn.Embedding(vocab_size, width)
+            # self.token_embedding = lora.Embedding(vocab_size, width, r=4)
         else:
-            # self.token_embedding = nn.Linear(vocab_size, width, bias=False)
-            self.token_embedding = lora.Linear(vocab_size, width, r=4)
+            self.token_embedding = nn.Linear(vocab_size, width, bias=False)
+            # self.token_embedding = lora.Linear(vocab_size, width, r=4)
         self.pos_embed = nn.Parameter(torch.empty(self.context_length, width))
         self.blocks = nn.Sequential(
             *[
@@ -240,7 +240,7 @@ class GPT(nn.Module):
     def forward(self, text):
         x = self.token_embedding(text)  # [batch_size, n_ctx, d_model]
         assert (
-            x.size(1) <= self.context_length
+            x.size(1) <= self.context_length    # n_ctx
         ), f"{x.size(1)} exceeds context length {self.context_length}"
         x = x + self.pos_embed  # x = x + self.pos_embed[: x.size(1)]
         x = x.permute(1, 0, 2)  # NLD -> LND
@@ -295,23 +295,6 @@ class CLIP(nn.Module):
 
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
-    def get_layer(self, layer: int, layer_type: Literal['video', 'text', 'cross']):
-        if layer_type == 'video':
-            if layer < self.vit.layers:
-                return self.vit.get_layer(layer)
-            elif layer < self.vit.layers + self.temporal_encoder.layers:
-                return self.temporal_encoder.get_layer(layer - self.vit.layers)
-            elif layer < self.video_layers:
-                return self.video_adapter.get_layer(layer - self.vit.layers - self.temporal_encoder.layers)
-        elif layer_type == 'text':
-            if layer < self.gpt.layers:
-                return self.gpt.get_layer(layer)
-            elif layer < self.text_layers:
-                return self.text_adapter.get_layer(layer - self.gpt.layers)
-        elif layer_type == 'cross':
-            if layer == 0:
-                return self.logit_scale,
-        return []
 
     def encode_image(self, image):
         return self.vision_model(image)
