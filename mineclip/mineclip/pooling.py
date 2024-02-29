@@ -36,7 +36,7 @@ class TemporalPooling(nn.Module):
         self._pool_type = pool_type
         assert layers_before_pool >= 0
         self._layers_before_pool = layers_before_pool
-
+        self.layers = 1
         self.output_dim = output_dim
 
         self.residual_weight = None
@@ -69,6 +69,10 @@ class TemporalPooling(nn.Module):
             )
         else:
             self.attn = None
+
+    def get_layer(self, layer: int):
+        assert layer == 0
+        return self.attn.get_layer
 
     def forward(self, x):
         """

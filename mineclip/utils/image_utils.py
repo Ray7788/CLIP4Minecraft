@@ -7,13 +7,15 @@ import torch
 from .torch_utils import torch_normalize
 
 
-with open('config.yaml', 'r') as f:
-    config = yaml.safe_load(f)['data_config']
-MC_IMAGE_SIZE = config['image_size']
-MC_IMAGE_MEAN = config['image_mean']
-MC_IMAGE_STD = config['image_std']
-CLIP_FRAME_NUM = config['clip_frame']
-
+# with open('config.yaml', 'r') as f:
+#     config = yaml.safe_load(f)['data_config']
+# MC_IMAGE_SIZE = config['image_size']
+# MC_IMAGE_MEAN = config['image_mean']
+# MC_IMAGE_STD = config['image_std']
+# CLIP_FRAME_NUM = config['clip_frame']
+MC_IMAGE_SIZE = (160, 256)
+MC_IMAGE_MEAN = (0.3331, 0.3245, 0.3051)
+MC_IMAGE_STD = (0.2439, 0.2493, 0.2873)
 
 @torch.no_grad()
 def basic_image_tensor_preprocess(
