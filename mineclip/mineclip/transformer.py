@@ -69,6 +69,7 @@ class TemporalTransformer(nn.Module):
         self.max_seq_len = max_seq_len
         self.depth = depth
         self.num_heads = num_heads
+        self.layers = 1
     
     def get_layer(self, layer: int):
         assert layer == 0

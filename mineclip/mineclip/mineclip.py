@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
-
 import torch
 import torch.nn as nn
+from typing import Literal
+import numpy as np
 
 from .base import VideoRewardBase
 from .clip import CLIP
@@ -89,7 +90,46 @@ class MineCLIP(VideoRewardBase):
             reward_head=reward_head,
         )
         self.clip_model = model
+        
+        self.temporal_encoder = temporal_encoder
+        self.reward_head = reward_head
+        self.video_adapter_layers = video_adapter_layers
+        self.text_adapter_layers = text_adapter_layers
+        self.video_layers = self.clip_model.vision_model.layers + self.temporal_encoder.layers + self.video_adapter_layers   # (12+2) + 1 + 2
+        self.text_layers = self.clip_model.text_model.layers + self.text_adapter_layers  # (12+2) + 0
+        self.cross_layers = 1
+        self.layers = self.cross_layers + max(self.video_layers, self.text_layers)
 
+    def get_layer(self, layer: int, layer_type: Literal['video', 'text', 'cross']):
+        print("----------------Getting layer------------- ", self.video_layers, self.text_layers, self.cross_layers)
+        if layer_type == 'video':
+            if layer < self.clip_model.vision_model.layers:
+                print("Layer index video: ", layer)
+                return self.clip_model.vision_model.get_layer(layer)
+
+            elif layer < self.clip_model.vision_model.layers + self.temporal_encoder.layers:
+                print("Layer index video: ", layer)
+                return self.temporal_encoder.get_layer(layer - self.clip_model.vision_model.layers)
+            elif layer < self.video_layers: # 1st
+                print("Layer index video: ", layer)
+                return self.reward_head.get_layer(layer - self.clip_model.vision_model.layers - self.temporal_encoder.layers, type='video')
+            # - self.video_adapter_layers
+        elif layer_type == 'text':
+            if layer < self.clip_model.text_model.layers:
+                print("Layer index text: ", layer)              
+                return self.clip_model.text_model.get_layer(layer)
+            elif layer < self.text_layers:
+                print("Layer index text: ", layer) 
+                return self.reward_head.get_layer(layer - self.clip_model.text_model.layers, type='text')
+        elif layer_type == 'cross':
+            if layer == 0:
+                print("Layer index cross: ", layer) 
+                return nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+                # return nn.Parameter(self.clip_model.logit_scale.cpu()) 
+                # self.clip_model.logit_scale  # TODO: check this 2 versions: build_logit_scale
+            print("Layer total cross: done", layer)
+        return []
+    
     def encode_text(self, text_tokens):
         return self.clip_model.encode_text(text_tokens)
 

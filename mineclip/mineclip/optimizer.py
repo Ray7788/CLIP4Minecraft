@@ -175,8 +175,7 @@ def get_optimizer(optimizer_name, schedule_name, model,
                   lr, layer_wise_lr_decay, weight_decay, warmup_proportion, t_total, max_grad_norm,
                   text_freeze_layer: int | None = None,
                   video_freeze_layer: int | None = None):
-    # if name == 'BertAdam':
-    lr_dicts = []
+    lr_dicts = {}
     for layer_type, layer_num in zip(['text', 'video', 'cross'],
                                      [model.text_layers, model.video_layers, model.cross_layers]):
         if layer_type == 'text':
@@ -187,17 +186,100 @@ def get_optimizer(optimizer_name, schedule_name, model,
             freeze_layer = 0
         layer_lr = lr
         for i in range(layer_num - 1, -1, -1):
-            for n in model.get_layer(i, layer_type):
-                if n is None:
-                    continue
-                if i < freeze_layer:
-                    n.requires_grad_(False)
-                elif isinstance(n, torch.nn.Parameter):
-                    lr_dicts.append({'params': n, 'lr': layer_lr})
+            layer = model.get_layer(i, layer_type)
+            if layer is None:
+                continue
+            if isinstance(layer, torch.Tensor):
+                if layer.dim() == 0:
+                    # Handle 0-d tensor
+                    if i < freeze_layer:
+                        layer.requires_grad_(False)
+                    elif layer not in lr_dicts:
+                        lr_dicts[layer] = {'params': layer, 'lr': layer_lr}
                 else:
-                    lr_dicts.append({'params': n.parameters(), 'lr': layer_lr})
-            if layer_type != 'cross':
-                layer_lr *= layer_wise_lr_decay
+                    # Handle tensor with more than 0 dimensions
+                    for n in layer:
+                        if i < freeze_layer:
+                            n.requires_grad_(False)
+                        elif n not in lr_dicts:
+                            lr_dicts[n] = {'params': n, 'lr': layer_lr}
+            else:
+                # Handle non-tensor object
+                for n in layer:
+                    if i < freeze_layer:
+                        n.requires_grad_(False)
+                    elif isinstance(n, torch.nn.Parameter) and n not in lr_dicts:
+                        lr_dicts[n] = {'params': n, 'lr': layer_lr}
+                    elif n not in lr_dicts:
+                        lr_dicts[n] = {'params': n.parameters(), 'lr': layer_lr}
+        if layer_type != 'cross':
+            layer_lr *= layer_wise_lr_decay
+
+    # Convert lr_dicts back to a list before passing it to the optimizer
+    lr_dicts = list(lr_dicts.values())
+    # --------------------------------------------------------------------------------------------
+    # if name == 'BertAdam':
+    # lr_dicts = []
+    # for layer_type, layer_num in zip(['text', 'video', 'cross'],
+    #                                  [model.text_layers, model.video_layers, model.cross_layers]):
+    #     if layer_type == 'text':
+    #         freeze_layer = text_freeze_layer
+    #     elif layer_type == 'video':
+    #         freeze_layer = video_freeze_layer
+    #     else:
+    #         freeze_layer = 0
+    #     layer_lr = lr
+    #     for i in range(layer_num - 1, -1, -1):
+    #         layer = model.get_layer(i, layer_type)
+    #         if layer is None:
+    #             continue
+    #         if isinstance(layer, torch.Tensor):
+    #             if layer.dim() == 0:
+    #                 print('Layer type 0D: ',layer_type)
+    #                 # Handle 0-d tensor
+    #                 if i < freeze_layer:
+    #                     layer.requires_grad_(False)
+    #                 else:
+    #                     lr_dicts.append({'params': layer, 'lr': layer_lr})
+    #             else:
+    #                 print('Layer type mormal: ',layer_type)
+    #                 # Handle tensor with more than 0 dimensions
+    #                 for n in layer:
+    #                     if i < freeze_layer:
+    #                         n.requires_grad_(False)
+    #                     else:
+    #                         lr_dicts.append({'params': n, 'lr': layer_lr})
+    #         else:
+    #             print('Layer type non tensor: ',layer_type)
+    #             # Handle non-tensor object
+    #             for n in layer:
+    #                 if i < freeze_layer:
+    #                     n.requires_grad_(False)
+    #                 elif isinstance(n, torch.nn.Parameter):
+    #                     lr_dicts.append({'params': n, 'lr': layer_lr})
+    #                 else:
+    #                     lr_dicts.append({'params': n.parameters(), 'lr': layer_lr})
+    #         if layer_type != 'cross':
+    #             layer_lr *= layer_wise_lr_decay
+    # print(lr_dicts)
+    # --------------------------------------------------------------------------------------------
+        # for i in range(layer_num - 1, -1, -1):
+        #     for n in model.get_layer(i, layer_type):
+        #         if n is None:
+        #             continue
+        #         if i < freeze_layer:
+        #             print('Layer add append: ',layer_type)
+        #             n.requires_grad_(False)
+        #         elif isinstance(n, torch.nn.Parameter):
+        #             print('Layer add append: ',layer_type)
+        #             lr_dicts.append({'params': n, 'lr': layer_lr})
+        #         else:
+        #             lr_dicts.append({'params': n.parameters(), 'lr': layer_lr})
+        #     if layer_type != 'cross':
+        #         layer_lr *= layer_wise_lr_decay
+        # print('Layer done: ',layer_type)
+    
+    print("Done: ")
     if optimizer_name == 'BertAdam':
         optimizer = BertAdam(lr_dicts, lr=lr, warmup=warmup_proportion, schedule=schedule_name,
                              b1=0.9, b2=0.98, e=1e-6,

@@ -1,3 +1,4 @@
+from typing import Literal
 import torch
 import torch.nn as nn
 
@@ -53,6 +54,18 @@ class CLIPScoreHead(nn.Module):
             # input * sigmoid(res_weight) + MLP(input) * (1-sigmoid(res_weight))
             # initialize res_weight to be positive so sigmoid(res_weight) is close to 1
             self.text_residual_weight = nn.Parameter(torch.tensor(4.0))
+        self.layers = 1 + 1 # video and text adapter layers?
+
+    def get_layer(self, layer: int, type: Literal['video', 'text']):
+        # assert layer == 0, "layer must be 0, but got {},\n video adapter layer are {},\n text adapter layer are {}. ".format(layer, self.video_adapter, self.text_adapter)
+        if type == 'video':
+            assert layer < len(self.video_adapter), "Invalid layer index for video adapter"
+            return self.video_adapter[layer], self.video_residual_weight
+        elif type == 'text':
+            assert layer == 0, "Invalid layer index for text adapter"        
+            return self.text_adapter, self.text_residual_weight
+        else:   # return self.adapter, self.residual_weight
+            return self.video_adapter, self.video_residual_weight, self.text_adapter, self.text_residual_weight
 
     def forward(self, video_feature, texts):
         if self.video_residual_weight is None:
