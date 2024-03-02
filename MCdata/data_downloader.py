@@ -90,7 +90,7 @@ def process_json(source_json_file, output_folder, sampled_json_file, failed_json
             continue
 
     # Write successful videos to corresponding output JSON file
-    with open(sampled_json_file_path, 'w') as file:
+    with open(sampled_json_file_path, 'a') as file:
         file.write(']')
     with open(failed_json_file_path, 'a') as file:
         file.write(']')
@@ -99,10 +99,10 @@ def process_json(source_json_file, output_folder, sampled_json_file, failed_json
 
 def main():
     # MCdata/train_1.json
-    source_json_files = ['train_2.json', 'test_2.json']  # the path to source JSON file
-    sampled_json_files = ['train_2.json', 'test_2.json']  # actual selected output JSON file (after sampling)
-    output_folders = ['train_videos_2', 'test_videos_2']  # the path to the output folder
-    failed_json_files = ['train_2_failed.json', 'failed_test_2_failed.json']  # the path to the failed output JSON file
+    source_json_files = ['train_4.json', 'test_4.json']  # the path to source JSON file
+    sampled_json_files = ['train_4_log.json', 'test_4_log.json']  # actual selected output JSON file (after sampling)
+    output_folders = ['train_4_videos', 'test_4_videos']  # the path to the output folder
+    failed_json_files = ['train_4_failed.json', 'failed_test_4_failed.json']  # the path to the failed output JSON file
     all_successful_videos = []   # List of videos that were successfully downloaded
     
     print("Downloading video clips---------------------------------")

@@ -6,7 +6,7 @@ from functools import lru_cache
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import torch
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer
 
 
 def get_model_full_name(model_name):
@@ -80,5 +80,3 @@ def tokenize_batch(
         batch_tokens[i, 1 : len(sentence) + 1] = torch.LongTensor(sentence)
         batch_tokens[i, len(sentence) + 1] = end_token_id
     return batch_tokens
-
-# 对一批文本进行分词，并将分词结果转换为张量，以便后续的模型训练或推理。
