@@ -12,7 +12,7 @@ class NaiveDataset(Dataset):
         dataset_log_file: path to the corresponding dataset file.
         use_mask: whether to use entity mask and action mask of text input.
     """
-    def __init__(self, dataset_log_file: str, use_mask: bool = True, dataset: Literal["train", "test"] = None):
+    def __init__(self, dataset_log_file: str, use_mask: bool = False, dataset: Literal["train", "test"] = None):
         self.dataset = dataset
         self.dataset_log_file = dataset_log_file
         self.len = get_processed_len(dataset_log_file, dataset)
@@ -40,4 +40,4 @@ class NaiveDataset(Dataset):
         video = data[0] 
         text = data[1]
 
-        return video, text
+        return data

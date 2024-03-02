@@ -21,15 +21,17 @@ def get_processed_list(dataset_log_file: str, dataset: Literal['train', 'test'] 
     """
     with open(dataset_log_file, 'r') as f:
         datasets = json.load(f)
-
+        print(f"Loaded {len(datasets)} samples from dataset log file: {dataset_log_file}")
     return datasets
 
 
 def get_processed_len(dataset_log_file, dataset: Literal["train", "test"] = None):
     """
-    Get the length of processed data files.
+    Get the length of processed data files.TODO: DEPRECATED
     """
-    return len(get_processed_list(dataset_log_file, dataset))
+    length = len(get_processed_list(dataset_log_file, dataset))
+    print(f"Length of dataset: {length}")
+    return length
 
 
 def load_processed_data(dataset_log_file, data_idx: int, use_mask: bool = False,
@@ -49,7 +51,7 @@ def load_processed_data(dataset_log_file, data_idx: int, use_mask: bool = False,
     """
     processed_list = get_processed_list(dataset_log_file, dataset)
 
-    assert data_idx < get_processed_len(processed_list), \
+    assert data_idx < len(processed_list), \
         f'Index {data_idx} is beyond the length of processed {dataset} dataset, {len(processed_list)}.'
 
     # raw text input
@@ -58,7 +60,7 @@ def load_processed_data(dataset_log_file, data_idx: int, use_mask: bool = False,
     file_path = processed_list[data_idx].get('vid')
     dir_path = os.path.dirname(dataset_log_file)
     # load video tensor input
-    with open(os.path.join(dir_path, file_path, '.pth'), 'rb') as f:
+    with open(os.path.join(dir_path, file_path + '.pth'), 'rb') as f:
         video_input = torch.load(f)
     
     return (video_input, *text_input) if use_mask else (video_input, text_input)

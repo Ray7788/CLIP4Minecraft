@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import os
 from typing import Literal
 import cv2
 import torch
 from torchvision import transforms
 import numpy as np
+import json
 import warnings
 import yaml
 from PIL import Image
 
-from __future__ import annotations
 from mineclip.utils.image_utils import basic_image_tensor_preprocess
 from mineclip.utils.convert_utils import any_to_torch_tensor
 
@@ -20,19 +22,13 @@ def img_to_tensor(frame, dtype=None, device=None):
     # CV2 uses BGR, which needs to be converted to RGB
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Change color space from BGR to RGB
     img = torch.ByteTensor(torch.ByteStorage.from_buffer(frame.tobytes()))
-    img = img.view(frame.shape[1], frame.shape[0], len(frame.mode)) # HWC ordinary format
+    # print(img.shape)
+    img = img.view(frame.shape[1], frame.shape[0], frame.shape[2]) # HWC ordinary format , len(frame.mode)
     img = img.permute((2, 0, 1)).contiguous()   # change to CHW (PyTorch format)
     img = any_to_torch_tensor(img, dtype=dtype, device=device)
-    img.unsqueeze_(dim=0)   # add a leading batch dim
-
+    # img.unsqueeze_(dim=0)   # add a leading batch dim
+    # print(img.shape)
     return img
-
-
-# 辅助函数，将numpy数组转换为torch张量
-# def any_to_torch_tensor(data, dtype=None, device=None):
-#     if not torch.is_tensor(data):
-#         data = torch.tensor(data, dtype=dtype, device=device)
-#     return data
 
 
 def sample_frames(video_file, num_frames=16, frame_size=(160, 256)):
@@ -86,19 +82,50 @@ def preprocess_frames(frames, dataset: Literal["train", "test"] = None, mean=(0.
 
         frame_tensor = img_to_tensor(frame)
         preprocessed_frames.append(frame_tensor)
-        
     return torch.stack(preprocessed_frames) # Stack 16 frames into a single tensor
 
 
 def preprocess_video(video_file, num_frames=16, dataset: Literal["train", "test"] = None):
     """
     Preprocess a video file by sampling 16 frames and preprocessing them
+
+    Args:
+        video_file: path to the video file
+        num_frames: number of frames to sample from the video
+        dataset: which dataset type the video is from, train or test
     """
     frames = sample_frames(video_file, num_frames=num_frames)
     preprocessed_frames = preprocess_frames(frames, dataset)
-
+    print(preprocessed_frames.shape)
     pth_id = os.path.splitext(video_file)[0]
     torch.save(preprocessed_frames, pth_id + ".pth")
+    print(f"Preprocessed video saved as {pth_id}.pth")
+
+
+def preprocess_videos_from_json(json_file, num_frames=16, dataset="train"):
+    """
+    Preprocess multiple videos listed in a JSON file
+
+    Args:
+        json_file: path to the JSON file containing a list of videos
+        num_frames: number of frames to sample from each video
+        dataset: which dataset type the videos are from, train or test
+    """
+    with open(json_file, 'r') as f:
+        video_list = json.load(f)
+
+    for video in video_list:
+        video_file = './train_3_videos/' + video['vid'] + '.mp4'
+        preprocess_video(video_file, num_frames=num_frames, dataset=dataset)
+
+preprocess_videos_from_json("./train_3_videos/train_3_log.json", num_frames=16, dataset="test")
+# Process single video file
+# preprocess_video("./train_3_videos/_CtrMzI4INY.mp4", num_frames=16, dataset="train")
+# ./train_3_videos/_CtrMzI4INY.mp4
+
+# Check shape of saved .pth file
+# b=torch.load("./test_3_videos/iSUbLF7KWaY.pth")   # 指定加载的device
+# print(b.shape)
 
 """
 Logic: 
