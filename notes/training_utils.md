@@ -1,0 +1,2 @@
+## Seed
+We set the random seed in various libraries and operations in Python, ensuring consistent and reproducible results across multiple runs. The seed is set for Python's built-in random number generator, Python's hash-based types, NumPy's random number generator, and PyTorch's random number generator for both CPU and CUDA. Additionally, the environment variable PYTHONHASHSEED is set to control the randomness of Python's hash-based types. The behavior of cuDNN, a GPU-accelerated library for deep neural networks, is also configured to ensure consistent results.
