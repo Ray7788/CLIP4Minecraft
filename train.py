@@ -6,8 +6,8 @@ from __future__ import print_function
 import datetime
 import json
 import sys
-print(sys.path)
-sys.path.append('/home/codeRepo/MineCLIP')
+# print(sys.path)
+# sys.path.append('/home/codeRepo/MineCLIP')
 from MCdata.data_loader import get_naive_dataloader
 
 from mineclip import MineCLIP
@@ -106,7 +106,12 @@ def train_epoch(epoch, args, model, train_dataloader, device, optimizer, schedul
 
     for step, batch in enumerate(train_dataloader):
         torch.cuda.empty_cache()
-        video, text = tuple(t.to(device) for t in batch)
+        # print("Step: ", step, "Batch: ", batch)
+        video = tuple(t.to(device) for t in batch[0])
+        video = torch.stack(video)
+        print("Train Video: ", video.shape, "Video length is: ", len(video))
+        text = list(batch[1])
+        print("Train Text length is: ", len(text))
         # Preprocess text
         text_feats_batch = model.encode_text(text)
 
@@ -125,7 +130,7 @@ def train_epoch(epoch, args, model, train_dataloader, device, optimizer, schedul
         optimizer.step()
         optimizer.zero_grad()
 
-        model.module.clamp_logit_scale()    # Clamp the logit scale
+        model.clamp_logit_scale()    # Clamp the logit scale
 
         global_step += 1
         grad_step += 1
@@ -163,7 +168,12 @@ def eval_epoch(model, test_dataloader, writer, epoch, device):
 
         for bid, batch in enumerate(test_dataloader):
             torch.cuda.empty_cache()
-            video, text = tuple(t.to(device) for t in batch)
+            # print("Step: ", step, "Batch: ", batch)
+            video = tuple(t.to(device) for t in batch[0])
+            video = torch.stack(video)
+            print("Evaluation Video: ", video.shape, "Video length: ", len(video))
+            text = list(batch[1])
+            print("Train Text: ", len(text))
             # Preprocess text
             text_feats_batch = model.encode_text(text)
             with autocast(device_type='cuda'):
@@ -211,7 +221,7 @@ def eval_epoch(model, test_dataloader, writer, epoch, device):
             for ki in range(kind):
                 sub_video_features = video_features[ki] if isinstance(video_features, list) else video_features
                 sub_text_features = text_features[ki] if isinstance(text_features, list) else text_features
-                sim_matrix = sub_video_features @ sub_text_features.t()
+                sim_matrix = sub_video_features.float() @ sub_text_features.t().float()
                 final_sim_matrix += sim_matrix
 
             # Compute the metrics for the final similarity matrix
@@ -276,17 +286,20 @@ def main(args):
     if args.model_type == 'MineCLIP':
         model = MineCLIP(arch="vit_base_p16_fz.v2.t2", 
             resolution=[160, 256], 
-            pool_type='attn.i512.e512.d2.nh8.glu',
+            pool_type='attn.d2.nh8.glusw', #attn.d2.nh8.glusw，  attn.i512.e512.d2.nh8.glusw
             image_feature_dim=512, 
-            mlp_adapter_spec='v0-2.t0', 
+            mlp_adapter_spec='v0-2.t0', # 'v3-1.t2' 'v0-2.t0'
             hidden_dim=512)
     else:
         raise NotImplementedError
-
+    
+    # print("Model: ", model)
     if args.use_pretrained_model:
         if local_rank == 0:
             logger.info("Loading pretrained model from {}".format(args.pretrain_model_path))
-        model.load_state_dict(torch.load(args.pretrain_model_path), strict=False)
+        model.load_ckpt('attn.pth', strict=True)
+        print("Successfully loaded ckpt!")
+        # model.load_state_dict(torch.load(args.pretrain_model_path), strict=False)
 
     model = model.to(device)
 
@@ -322,8 +335,8 @@ def main(args):
                               text_freeze_layer=args.text_freeze_layer,
                               video_freeze_layer=args.video_freeze_layer)
 
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
-                                                      output_device=local_rank, find_unused_parameters=True)
+    # model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
+    #                                                   output_device=local_rank, find_unused_parameters=True)
 
     scheduler = None
 

@@ -13,11 +13,11 @@ def get_args(description='MineCLIP args'):
     parser.add_argument('--test_dataset_log_file', type=str, default='./MCdata/test_3_videos/test_3_log.json',
                         help='test dataset log file of data(video&text input) paths')
     
-    parser.add_argument('--use_pretrained_CLIP', action='store_true', default=False, help='use pretrained CLIP(ViT) model')
-    parser.add_argument('--pretrained_CLIP_path', type=str, default="./ViT-B-16.pt", help='pretrained CLIP model path')
+    # parser.add_argument('--use_pretrained_CLIP', action='store_true', default=False, help='use pretrained CLIP(ViT) model')
+    # parser.add_argument('--pretrained_CLIP_path', type=str, default="./ViT-B-16.pt", help='pretrained CLIP model path')
 
     parser.add_argument('--use_pretrained_model', action='store_true', default=True, help='use pretrained model')
-    parser.add_argument('--pretrain_model_path', type=str, default="./attn.pth", help='pretrained model path')
+    parser.add_argument('--pretrain_model_path', type=str, default="attn.pth", help='pretrained model path')
     parser.add_argument('--model_type', type=str, default='MineCLIP', choices=['CLIP4MC', 'MineCLIP'], help='pretrained model type')
 
     parser.add_argument('--clip_frame_num', type=int, default=16, help='frame num for each shorter clip')
@@ -39,8 +39,8 @@ def get_args(description='MineCLIP args'):
     parser.add_argument('--max_grad_norm', type=float, default=1.0, help='max grad norm')
 
     # Freeze layer
-    parser.add_argument('--text_freeze_layer', type=int, default=12, help='text encoder freeze layer')
-    parser.add_argument('--video_freeze_layer', type=int, default=12, help='video encoder freeze layer')
+    parser.add_argument('--text_freeze_layer', type=int, default=11, help='text encoder freeze layer')
+    parser.add_argument('--video_freeze_layer', type=int, default=11, help='video encoder freeze layer')
 
     parser.add_argument('--save_model_path', type=str, default="./ckt", help='path for saving new trained model')
 
